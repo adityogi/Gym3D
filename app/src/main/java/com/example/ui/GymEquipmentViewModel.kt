@@ -172,7 +172,9 @@ class GymEquipmentViewModel(application: Application) : AndroidViewModel(applica
         val split = ScienceEngine.generateSplit(
             daysPerWeek = profile.workoutDaysPerWeek,
             prioritized1 = profile.prioritizedMuscle1,
-            prioritized2 = profile.prioritizedMuscle2
+            prioritized2 = profile.prioritizedMuscle2,
+            experienceLevel = profile.experienceLevel,
+            equipmentAccess = profile.equipmentAccess
         )
         _generatedSplit.value = split
     }

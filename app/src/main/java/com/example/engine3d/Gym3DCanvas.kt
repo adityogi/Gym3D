@@ -46,19 +46,31 @@ fun Gym3DCanvas(
         EquipmentGeometries.getGeometry(equipmentId, animationProgress)
     }
 
+    val cachedPinMarkers = remember { mutableListOf<Triple<String, String, Offset>>() }
+
     Canvas(
         modifier = modifier
             .fillMaxSize()
             .testTag("gym_3d_canvas")
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onDoubleTap = { onResetCamera() }
+                    onDoubleTap = { onResetCamera() },
+                    onTap = { offset ->
+                        // Hit-test adjustment pin markers
+                        val hitRadius = 42f
+                        val hit = cachedPinMarkers.firstOrNull { (_, _, pos) ->
+                            kotlin.math.hypot((pos.x - offset.x).toDouble(), (pos.y - offset.y).toDouble()) <= hitRadius
+                        }
+                        if (hit != null) {
+                            // If caller supports pin selection, notify
+                        }
+                    }
                 )
             }
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, gestureZoom, _ ->
-                    // Rotate on drag
-                    onRotate(pan.x * 0.45f, -pan.y * 0.45f)
+                    // 360-degree orbital rotation on drag
+                    onRotate(-pan.x * 0.45f, pan.y * 0.45f)
                     // Zoom
                     if (gestureZoom != 1.0f) {
                         onZoomChange((zoom * gestureZoom).coerceIn(0.55f, 2.8f))
@@ -164,10 +176,12 @@ fun Gym3DCanvas(
         }
 
         // 5. Draw interactive Pin Indicators / Adjustment Points
+        cachedPinMarkers.clear()
         for (pin in geometry.pinIndicators) {
             val transformedPin = pin.position.rotateY(yaw).rotateX(pitch)
             val projectedPin = transformedPin.project(width, height, cameraDistance = 900f, scale = baseScale)
             val isSelected = pin.id == selectedPinId
+            cachedPinMarkers.add(Triple(pin.id, pin.label, projectedPin.screenPos))
 
             drawPinMarker(
                 pos = projectedPin.screenPos,
@@ -175,7 +189,35 @@ fun Gym3DCanvas(
                 isSelected = isSelected
             )
         }
+
+        // 6. Draw 360-degree orientation compass gizmo
+        drawCompassRing(yaw, width)
     }
+}
+
+private fun DrawScope.drawCompassRing(yaw: Float, width: Float) {
+    val center = Offset(width - 45f, 50f)
+    val radius = 16f
+
+    drawCircle(
+        color = ElectricLime.copy(alpha = 0.22f),
+        radius = radius,
+        center = center,
+        style = Stroke(width = 1.5f)
+    )
+
+    val rad = Math.toRadians((yaw - 90.0).toDouble())
+    val needleEnd = Offset(
+        center.x + (radius - 3f) * kotlin.math.cos(rad).toFloat(),
+        center.y + (radius - 3f) * kotlin.math.sin(rad).toFloat()
+    )
+
+    drawLine(
+        color = ElectricLime,
+        start = center,
+        end = needleEnd,
+        strokeWidth = 2.5f
+    )
 }
 
 private fun DrawScope.drawGroundGrid(

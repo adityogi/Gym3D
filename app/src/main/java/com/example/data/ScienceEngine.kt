@@ -97,16 +97,92 @@ object ScienceEngine {
         return Triple(targetCalories, Triple(proteinG, carbsG, fatG), maintenanceTdee)
     }
 
+    // Helpers for Diagnostic Onboarding Telemetry
+    fun calculateBmi(heightCm: Float, weightKg: Float): Float {
+        val heightM = heightCm / 100f
+        return if (heightM > 0f) weightKg / (heightM * heightM) else 0f
+    }
+
+    fun calculateBmr(isMale: Boolean, age: Int, heightCm: Float, weightKg: Float): Float {
+        return (10f * weightKg) + (6.25f * heightCm) - (5f * age) + (if (isMale) 5f else -161f)
+    }
+
+    fun getSplitDescription(daysPerWeek: Int): String {
+        return when (daysPerWeek) {
+            3 -> "3-Day Full Body Foundation (A / B / C)"
+            4 -> "4-Day Upper / Lower Periodized Split"
+            5 -> "5-Day Push / Pull / Legs / Upper / Lower"
+            else -> "6-Day Push / Pull / Legs (PPL x 2)"
+        }
+    }
+
     // 2. Periodized Split Allocation Engine
     fun generateSplit(
         daysPerWeek: Int,
-        prioritized1: String,
-        prioritized2: String
+        prioritized1: String = "Upper Chest",
+        prioritized2: String = "Side Delts",
+        experienceLevel: String = "Intermediate (1-3 yrs)",
+        equipmentAccess: String = "Commercial Gym"
     ): List<WorkoutSessionPlan> {
         val extraChest = prioritized1 == "Upper Chest" || prioritized2 == "Upper Chest"
         val extraDelts = prioritized1 == "Side Delts" || prioritized2 == "Side Delts"
         val extraLats = prioritized1 == "Lats" || prioritized2 == "Lats"
         val extraQuads = prioritized1 == "Quads & Glutes" || prioritized2 == "Quads & Glutes"
+        val extraArms = prioritized1 == "Arms" || prioritized2 == "Arms"
+
+        val isBeginner = experienceLevel.contains("Beginner", ignoreCase = true)
+        val isAdvanced = experienceLevel.contains("Advanced", ignoreCase = true)
+
+        val defaultRir = when {
+            isBeginner -> "2–3 RIR"
+            isAdvanced -> "0–1 RIR"
+            else -> "1–2 RIR"
+        }
+
+        val baseSets = when {
+            isBeginner -> 3
+            isAdvanced -> 4
+            else -> 3
+        }
+
+        val isDumbbellsOnly = equipmentAccess.contains("Dumbbell", ignoreCase = true)
+        val isBodyweight = equipmentAccess.contains("Bodyweight", ignoreCase = true)
+
+        // Equipment resolution helpers
+        fun chestPressName() = when {
+            isBodyweight -> "Deficit Tempo Push-ups"
+            isDumbbellsOnly -> "Flat Dumbbell Press"
+            else -> "Barbell Flat Bench Press"
+        }
+        fun chestPressEquip() = if (isDumbbellsOnly) "incline_dumbbell" else "bench_press"
+
+        fun squatName() = when {
+            isBodyweight -> "Bodyweight Bulgarian Split Squats"
+            isDumbbellsOnly -> "Dumbbell Goblet Squat"
+            else -> "Barbell Back Squat"
+        }
+        fun squatEquip() = if (isDumbbellsOnly) "incline_dumbbell" else "squat_rack"
+
+        fun pullName() = when {
+            isBodyweight -> "Doorway Inverted Rows"
+            isDumbbellsOnly -> "Incline Chest-Supported DB Row"
+            else -> "Cable Lat Pulldown"
+        }
+        fun pullEquip() = if (isDumbbellsOnly) "incline_dumbbell" else "lat_pulldown"
+
+        fun rowName() = when {
+            isBodyweight -> "Scapular Inverted Rows"
+            isDumbbellsOnly -> "One-Arm Dumbbell Row"
+            else -> "Seated Cable Row"
+        }
+        fun rowEquip() = if (isDumbbellsOnly) "incline_dumbbell" else "seated_row"
+
+        fun flyName() = when {
+            isBodyweight -> "Floor Sliding Flyes"
+            isDumbbellsOnly -> "Dumbbell Incline Fly"
+            else -> "Dual Cable Pec Fly"
+        }
+        fun flyEquip() = if (isDumbbellsOnly) "incline_dumbbell" else "cable_fly"
 
         return when (daysPerWeek) {
             3 -> listOf(
@@ -116,39 +192,39 @@ object ScienceEngine {
                     targetMuscles = listOf("Pectorals", "Quadriceps", "Latissimus Dorsi", "Deltoids"),
                     exercises = listOf(
                         PlannedExercise(
-                            equipmentId = "bench_press",
-                            exerciseName = "Barbell Flat Bench Press",
-                            prescribedSets = if (extraChest) 4 else 3,
-                            targetRepRange = "6–10",
-                            targetRir = "1–2 RIR",
-                            restSeconds = 150,
-                            volumeLandmark = "MAV (Primary Compound)",
+                            equipmentId = chestPressEquip(),
+                            exerciseName = chestPressName(),
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
+                            targetRepRange = if (isBeginner) "8–12" else "6–10",
+                            targetRir = defaultRir,
+                            restSeconds = if (isBeginner) 120 else 150,
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Primary Compound)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Incline Dumbbell Press", "Clavicular Pec Head", "incline_dumbbell", "Easier on shoulder joint, deeper stretch"),
                                 BiomechanicalSwap("Dual Cable Pec Fly", "Sternal Pec Fibers", "cable_fly", "Continuous horizontal adduction tension")
                             )
                         ),
                         PlannedExercise(
-                            equipmentId = "squat_rack",
-                            exerciseName = "Barbell Back Squat",
-                            prescribedSets = if (extraQuads) 4 else 3,
-                            targetRepRange = "6–8",
-                            targetRir = "2 RIR",
+                            equipmentId = squatEquip(),
+                            exerciseName = squatName(),
+                            prescribedSets = if (extraQuads) baseSets + 1 else baseSets,
+                            targetRepRange = if (isBeginner) "8–10" else "6–8",
+                            targetRir = defaultRir,
                             restSeconds = 180,
-                            volumeLandmark = "MAV (Quadriceps & Glute)",
+                            volumeLandmark = if (extraQuads) "MRV Focus (+3-4 Sets Priority)" else "MAV (Quadriceps & Glute)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Dumbbell Goblet Squat", "Quadriceps Focus", "incline_dumbbell", "Reduced axial spinal compression"),
                                 BiomechanicalSwap("Rowing Ergometer Sprint", "Lower Body Power", "rowing_machine", "Aerobic leg drive power")
                             )
                         ),
                         PlannedExercise(
-                            equipmentId = "lat_pulldown",
-                            exerciseName = "Cable Lat Pulldown",
-                            prescribedSets = if (extraLats) 4 else 3,
+                            equipmentId = pullEquip(),
+                            exerciseName = pullName(),
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
                             targetRepRange = "8–12",
-                            targetRir = "1–2 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 120,
-                            volumeLandmark = "MAV (Back Width)",
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Back Width)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Seated Cable Row", "Mid-Back Thickness", "seated_row", "Horizontal scapular retraction emphasis")
                             )
@@ -161,25 +237,25 @@ object ScienceEngine {
                     targetMuscles = listOf("Latissimus Dorsi", "Shoulders", "Chest", "Core"),
                     exercises = listOf(
                         PlannedExercise(
-                            equipmentId = "seated_row",
-                            exerciseName = "Seated Cable Row",
-                            prescribedSets = 3,
+                            equipmentId = rowEquip(),
+                            exerciseName = rowName(),
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
                             targetRepRange = "8–12",
-                            targetRir = "1–2 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 120,
-                            volumeLandmark = "MAV (Rhomboids & Lats)",
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Rhomboids & Lats)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Cable Lat Pulldown", "Vertical Lat Width", "lat_pulldown", "Alternative vertical plane pull")
                             )
                         ),
                         PlannedExercise(
                             equipmentId = "incline_dumbbell",
-                            exerciseName = "Dumbbell Incline Bench Press",
-                            prescribedSets = if (extraChest) 4 else 3,
+                            exerciseName = if (isBodyweight) "Feet-Elevated Push-ups" else "Dumbbell Incline Bench Press",
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
                             targetRepRange = "8–12",
-                            targetRir = "1 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 120,
-                            volumeLandmark = "MAV (Upper Chest)",
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Upper Chest)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Cable Pec Crossover", "Clavicular Pec", "cable_fly", "Low-to-high fly matching upper chest fibers")
                             )
@@ -204,15 +280,27 @@ object ScienceEngine {
                     targetMuscles = listOf("Deltoids", "Pectorals", "Back", "Legs"),
                     exercises = listOf(
                         PlannedExercise(
-                            equipmentId = "cable_fly",
-                            exerciseName = "Dual Cable Pec Crossover",
-                            prescribedSets = if (extraChest) 4 else 3,
+                            equipmentId = flyEquip(),
+                            exerciseName = flyName(),
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
                             targetRepRange = "10–15",
-                            targetRir = "0–1 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 90,
-                            volumeLandmark = "MAV (Chest Isolation)",
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Chest Isolation)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Dumbbell Incline Press", "Chest Hypertrophy", "incline_dumbbell", "Compound pressing variation")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = "incline_dumbbell",
+                            exerciseName = "Dumbbell Lateral Raise & Delts",
+                            prescribedSets = if (extraDelts) baseSets + 2 else baseSets,
+                            targetRepRange = "12–15",
+                            targetRir = defaultRir,
+                            restSeconds = 75,
+                            volumeLandmark = if (extraDelts) "MRV Focus (+3-4 Sets Priority)" else "MAV (Side Delts)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Cable Lateral Raise", "Lateral Deltoid", "cable_fly", "Continuous tension curve")
                             )
                         ),
                         PlannedExercise(
@@ -238,37 +326,37 @@ object ScienceEngine {
                     targetMuscles = listOf("Pectorals", "Latissimus Dorsi", "Deltoids", "Triceps"),
                     exercises = listOf(
                         PlannedExercise(
-                            equipmentId = "bench_press",
-                            exerciseName = "Barbell Flat Bench Press",
-                            prescribedSets = if (extraChest) 4 else 3,
-                            targetRepRange = "6–8",
-                            targetRir = "1–2 RIR",
+                            equipmentId = chestPressEquip(),
+                            exerciseName = chestPressName(),
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
+                            targetRepRange = if (isBeginner) "8–10" else "6–8",
+                            targetRir = defaultRir,
                             restSeconds = 150,
-                            volumeLandmark = "MAV (Chest Compound)",
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Chest Compound)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Incline Dumbbell Press", "Upper Chest Focus", "incline_dumbbell", "Greater unilateral freedom")
                             )
                         ),
                         PlannedExercise(
-                            equipmentId = "lat_pulldown",
-                            exerciseName = "Cable Lat Pulldown",
-                            prescribedSets = 3,
+                            equipmentId = pullEquip(),
+                            exerciseName = pullName(),
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
                             targetRepRange = "8–12",
-                            targetRir = "1 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 120,
-                            volumeLandmark = "MAV (Latissimus Dorsi)",
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Latissimus Dorsi)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Seated Cable Row", "Horizontal Back", "seated_row", "Thickness and scapular retraction")
                             )
                         ),
                         PlannedExercise(
-                            equipmentId = "cable_fly",
-                            exerciseName = "Cable Pec Crossover",
-                            prescribedSets = 3,
+                            equipmentId = flyEquip(),
+                            exerciseName = flyName(),
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
                             targetRepRange = "10–15",
-                            targetRir = "1 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 90,
-                            volumeLandmark = "MAV (Pec Peak Tension)",
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Pec Peak Tension)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Incline Dumbbell Press", "Clavicular Pec", "incline_dumbbell", "Heavy dumbbell overload")
                             )
@@ -281,13 +369,13 @@ object ScienceEngine {
                     targetMuscles = listOf("Quadriceps", "Glutes", "Hamstrings", "Calves"),
                     exercises = listOf(
                         PlannedExercise(
-                            equipmentId = "squat_rack",
-                            exerciseName = "Barbell Back Squat",
-                            prescribedSets = if (extraQuads) 4 else 3,
-                            targetRepRange = "6–10",
-                            targetRir = "2 RIR",
+                            equipmentId = squatEquip(),
+                            exerciseName = squatName(),
+                            prescribedSets = if (extraQuads) baseSets + 1 else baseSets,
+                            targetRepRange = if (isBeginner) "8–10" else "6–10",
+                            targetRir = defaultRir,
                             restSeconds = 180,
-                            volumeLandmark = "MAV (Quad Compound)",
+                            volumeLandmark = if (extraQuads) "MRV Focus (+3-4 Sets Priority)" else "MAV (Quad Compound)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Dumbbell Squats", "Quad Focus", "incline_dumbbell", "Zero spine compressive load")
                             )
@@ -312,27 +400,39 @@ object ScienceEngine {
                     targetMuscles = listOf("Latissimus Dorsi", "Shoulders", "Chest", "Biceps"),
                     exercises = listOf(
                         PlannedExercise(
-                            equipmentId = "seated_row",
-                            exerciseName = "Seated Cable Row",
-                            prescribedSets = if (extraLats) 4 else 3,
+                            equipmentId = rowEquip(),
+                            exerciseName = rowName(),
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
                             targetRepRange = "8–12",
-                            targetRir = "1 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 120,
-                            volumeLandmark = "MAV (Mid-Back)",
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Mid-Back)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Cable Lat Pulldown", "Vertical Back", "lat_pulldown", "Latissimus width emphasis")
                             )
                         ),
                         PlannedExercise(
                             equipmentId = "incline_dumbbell",
-                            exerciseName = "Incline Dumbbell Press",
-                            prescribedSets = if (extraChest) 4 else 3,
+                            exerciseName = if (isBodyweight) "Incline Push-ups" else "Incline Dumbbell Press",
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
                             targetRepRange = "8–12",
-                            targetRir = "1 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 120,
-                            volumeLandmark = "MAV (Upper Chest)",
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Upper Chest)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Barbell Flat Bench", "Sternal Chest", "bench_press", "Heavy barbell loading")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = "incline_dumbbell",
+                            exerciseName = "Lateral Raises & Rear Delts",
+                            prescribedSets = if (extraDelts) baseSets + 2 else baseSets,
+                            targetRepRange = "12–15",
+                            targetRir = defaultRir,
+                            restSeconds = 75,
+                            volumeLandmark = if (extraDelts) "MRV Focus (+3-4 Sets Priority)" else "MAV (Lateral Delts)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Cable Lateral Raise", "Lateral Delts", "cable_fly", "Constant cable tension")
                             )
                         )
                     )
@@ -370,44 +470,44 @@ object ScienceEngine {
                 )
             )
 
-            else -> listOf(
+            5 -> listOf(
                 WorkoutSessionPlan(
-                    dayName = "Push Day",
-                    splitTitle = "Chest, Shoulders & Triceps",
+                    dayName = "Push 1",
+                    splitTitle = "Chest, Shoulders & Triceps Strength",
                     targetMuscles = listOf("Pectorals", "Anterior Deltoids", "Triceps"),
                     exercises = listOf(
                         PlannedExercise(
-                            equipmentId = "bench_press",
-                            exerciseName = "Barbell Flat Bench Press",
-                            prescribedSets = 4,
-                            targetRepRange = "6–10",
-                            targetRir = "1–2 RIR",
+                            equipmentId = chestPressEquip(),
+                            exerciseName = chestPressName(),
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
+                            targetRepRange = if (isBeginner) "8–10" else "6–8",
+                            targetRir = defaultRir,
                             restSeconds = 150,
-                            volumeLandmark = "MAV (Primary Push)",
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Primary Push)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Incline Dumbbell Press", "Upper Chest", "incline_dumbbell", "Clavicular head isolation")
                             )
                         ),
                         PlannedExercise(
                             equipmentId = "incline_dumbbell",
-                            exerciseName = "Incline Dumbbell Press",
-                            prescribedSets = 3,
+                            exerciseName = if (isBodyweight) "Feet-Elevated Push-ups" else "Incline Dumbbell Press",
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
                             targetRepRange = "8–12",
-                            targetRir = "1 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 120,
-                            volumeLandmark = "MAV (Upper Chest)",
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Upper Chest)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Cable Pec Crossover", "Inner Chest", "cable_fly", "Constant cable tension")
                             )
                         ),
                         PlannedExercise(
-                            equipmentId = "cable_fly",
-                            exerciseName = "Dual Cable Pec Fly",
-                            prescribedSets = 3,
+                            equipmentId = flyEquip(),
+                            exerciseName = flyName(),
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
                             targetRepRange = "10–15",
-                            targetRir = "0–1 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 90,
-                            volumeLandmark = "MAV (Chest Isolation)",
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Chest Isolation)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Incline Dumbbell Fly", "Chest Stretch", "incline_dumbbell", "Loaded eccentric stretch")
                             )
@@ -415,30 +515,30 @@ object ScienceEngine {
                     )
                 ),
                 WorkoutSessionPlan(
-                    dayName = "Pull Day",
-                    splitTitle = "Back, Rear Delts & Biceps",
+                    dayName = "Pull 1",
+                    splitTitle = "Back, Rear Delts & Biceps Strength",
                     targetMuscles = listOf("Latissimus Dorsi", "Trapezius", "Rhomboids", "Biceps"),
                     exercises = listOf(
                         PlannedExercise(
-                            equipmentId = "lat_pulldown",
-                            exerciseName = "Cable Lat Pulldown",
-                            prescribedSets = 4,
+                            equipmentId = pullEquip(),
+                            exerciseName = pullName(),
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
                             targetRepRange = "8–12",
-                            targetRir = "1–2 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 120,
-                            volumeLandmark = "MAV (Vertical Pull)",
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Vertical Pull)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Seated Cable Row", "Horizontal Pull", "seated_row", "Thickness and scapular retraction")
                             )
                         ),
                         PlannedExercise(
-                            equipmentId = "seated_row",
-                            exerciseName = "Seated Cable Row",
-                            prescribedSets = 3,
+                            equipmentId = rowEquip(),
+                            exerciseName = rowName(),
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
                             targetRepRange = "8–12",
-                            targetRir = "1 RIR",
+                            targetRir = defaultRir,
                             restSeconds = 120,
-                            volumeLandmark = "MAV (Horizontal Pull)",
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Horizontal Pull)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Cable Lat Pulldown", "Vertical Width", "lat_pulldown", "Wide grip lat stimulation")
                             )
@@ -458,18 +558,18 @@ object ScienceEngine {
                     )
                 ),
                 WorkoutSessionPlan(
-                    dayName = "Legs Day",
+                    dayName = "Legs 1",
                     splitTitle = "Quads, Hamstrings & Calves",
                     targetMuscles = listOf("Quadriceps", "Gluteus Maximus", "Hamstrings", "Calves"),
                     exercises = listOf(
                         PlannedExercise(
-                            equipmentId = "squat_rack",
-                            exerciseName = "Barbell Back Squat",
-                            prescribedSets = 4,
-                            targetRepRange = "6–8",
-                            targetRir = "2 RIR",
+                            equipmentId = squatEquip(),
+                            exerciseName = squatName(),
+                            prescribedSets = if (extraQuads) baseSets + 1 else baseSets,
+                            targetRepRange = if (isBeginner) "8–10" else "6–8",
+                            targetRir = defaultRir,
                             restSeconds = 180,
-                            volumeLandmark = "MAV (Quad Anchor)",
+                            volumeLandmark = if (extraQuads) "MRV Focus (+3-4 Sets Priority)" else "MAV (Quad Anchor)",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Dumbbell Goblet Squat", "Quad Focus", "incline_dumbbell", "Lower spine relief")
                             )
@@ -484,6 +584,293 @@ object ScienceEngine {
                             volumeLandmark = "Quad Flush Conditioning",
                             biomechanicalSwaps = listOf(
                                 BiomechanicalSwap("Treadmill Incline Walk", "Glute Focus", "treadmill", "Incline walking")
+                            )
+                        )
+                    )
+                ),
+                WorkoutSessionPlan(
+                    dayName = "Upper Hypertrophy",
+                    splitTitle = "Upper Body Pump & Delts Focus",
+                    targetMuscles = listOf("Deltoids", "Pectorals", "Latissimus Dorsi", "Arms"),
+                    exercises = listOf(
+                        PlannedExercise(
+                            equipmentId = "incline_dumbbell",
+                            exerciseName = "Incline Dumbbell Hex Press",
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
+                            targetRepRange = "10–12",
+                            targetRir = defaultRir,
+                            restSeconds = 90,
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Upper Chest Hypertrophy)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Dual Cable Pec Fly", "Chest Isolation", "cable_fly", "Horizontal adduction tension")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = "incline_dumbbell",
+                            exerciseName = "Dumbbell Lateral Raise Constant Tension",
+                            prescribedSets = if (extraDelts) baseSets + 2 else baseSets,
+                            targetRepRange = "12–15",
+                            targetRir = defaultRir,
+                            restSeconds = 60,
+                            volumeLandmark = if (extraDelts) "MRV Focus (+3-4 Sets Priority)" else "MAV (Side Delts)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Cable Y-Raise", "Lateral Deltoids", "cable_fly", "Scapular plane lateral elevation")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = rowEquip(),
+                            exerciseName = "Close-Grip High Cable / DB Row",
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
+                            targetRepRange = "10–12",
+                            targetRir = defaultRir,
+                            restSeconds = 90,
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Upper Back)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Cable Pulldown", "Lats", "lat_pulldown", "Vertical plane")
+                            )
+                        )
+                    )
+                ),
+                WorkoutSessionPlan(
+                    dayName = "Lower Hypertrophy",
+                    splitTitle = "Glute, Hamstrings & Cardio Flush",
+                    targetMuscles = listOf("Glutes", "Hamstrings", "Quadriceps", "Calves"),
+                    exercises = listOf(
+                        PlannedExercise(
+                            equipmentId = squatEquip(),
+                            exerciseName = if (isBodyweight) "Walking Lunges & Jump Squats" else "Dumbbell Romanian Deadlift",
+                            prescribedSets = if (extraQuads) baseSets + 1 else baseSets,
+                            targetRepRange = "10–12",
+                            targetRir = defaultRir,
+                            restSeconds = 120,
+                            volumeLandmark = if (extraQuads) "MRV Focus (+3-4 Sets Priority)" else "MAV (Posterior Hypertrophy)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Goblet Squat", "Quads", "incline_dumbbell", "Knee flexion focus")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = "treadmill",
+                            exerciseName = "Treadmill High Incline Power Walk",
+                            prescribedSets = 3,
+                            targetRepRange = "12 Min at 10%",
+                            targetRir = "Zone 2",
+                            restSeconds = 60,
+                            volumeLandmark = "Aerobic & Glute Endurance",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Concept Air Rower", "Full Body", "rowing_machine", "Aerobic engine")
+                            )
+                        )
+                    )
+                )
+            )
+
+            else -> listOf(
+                WorkoutSessionPlan(
+                    dayName = "Push 1",
+                    splitTitle = "Chest, Anterior Delts & Triceps (Heavy)",
+                    targetMuscles = listOf("Pectorals", "Anterior Deltoids", "Triceps"),
+                    exercises = listOf(
+                        PlannedExercise(
+                            equipmentId = chestPressEquip(),
+                            exerciseName = chestPressName(),
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
+                            targetRepRange = if (isBeginner) "8–10" else "6–8",
+                            targetRir = defaultRir,
+                            restSeconds = 150,
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Primary Push)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Incline Dumbbell Press", "Upper Chest", "incline_dumbbell", "Clavicular head isolation")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = "incline_dumbbell",
+                            exerciseName = if (isBodyweight) "Incline Push-ups" else "Incline Dumbbell Press",
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
+                            targetRepRange = "8–12",
+                            targetRir = defaultRir,
+                            restSeconds = 120,
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Upper Chest)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Cable Pec Crossover", "Inner Chest", "cable_fly", "Constant cable tension")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = flyEquip(),
+                            exerciseName = flyName(),
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
+                            targetRepRange = "10–15",
+                            targetRir = defaultRir,
+                            restSeconds = 90,
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Chest Isolation)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Incline Dumbbell Fly", "Chest Stretch", "incline_dumbbell", "Loaded eccentric stretch")
+                            )
+                        )
+                    )
+                ),
+                WorkoutSessionPlan(
+                    dayName = "Pull 1",
+                    splitTitle = "Back Width & Biceps (Vertical Pull)",
+                    targetMuscles = listOf("Latissimus Dorsi", "Biceps", "Rear Deltoids"),
+                    exercises = listOf(
+                        PlannedExercise(
+                            equipmentId = pullEquip(),
+                            exerciseName = pullName(),
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
+                            targetRepRange = "8–12",
+                            targetRir = defaultRir,
+                            restSeconds = 120,
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Vertical Pull)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Seated Cable Row", "Horizontal Pull", "seated_row", "Thickness and scapular retraction")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = rowEquip(),
+                            exerciseName = rowName(),
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
+                            targetRepRange = "8–12",
+                            targetRir = defaultRir,
+                            restSeconds = 120,
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Horizontal Pull)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Cable Lat Pulldown", "Vertical Width", "lat_pulldown", "Wide grip lat stimulation")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = "rowing_machine",
+                            exerciseName = "Concept Air Rower Finish",
+                            prescribedSets = 3,
+                            targetRepRange = "500m Sprint",
+                            targetRir = "Zone 4",
+                            restSeconds = 90,
+                            volumeLandmark = "Posterior Conditioning",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Bike Ergometer", "Conditioning", "exercise_bike", "Low impact cardio alternative")
+                            )
+                        )
+                    )
+                ),
+                WorkoutSessionPlan(
+                    dayName = "Legs 1",
+                    splitTitle = "Quads & Calves (Knee Flexion Heavy)",
+                    targetMuscles = listOf("Quadriceps", "Gluteus Maximus", "Calves"),
+                    exercises = listOf(
+                        PlannedExercise(
+                            equipmentId = squatEquip(),
+                            exerciseName = squatName(),
+                            prescribedSets = if (extraQuads) baseSets + 1 else baseSets,
+                            targetRepRange = if (isBeginner) "8–10" else "6–8",
+                            targetRir = defaultRir,
+                            restSeconds = 180,
+                            volumeLandmark = if (extraQuads) "MRV Focus (+3-4 Sets Priority)" else "MAV (Quad Anchor)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Dumbbell Goblet Squat", "Quad Focus", "incline_dumbbell", "Lower spine relief")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = "exercise_bike",
+                            exerciseName = "Stationary Ergometer Bike",
+                            prescribedSets = 3,
+                            targetRepRange = "5 Min Intervals",
+                            targetRir = "Zone 3",
+                            restSeconds = 90,
+                            volumeLandmark = "Quad Flush Conditioning",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Treadmill Incline Walk", "Glute Focus", "treadmill", "Incline walking")
+                            )
+                        )
+                    )
+                ),
+                WorkoutSessionPlan(
+                    dayName = "Push 2",
+                    splitTitle = "Delts & Upper Chest Hypertrophy",
+                    targetMuscles = listOf("Deltoids", "Pectorals", "Triceps"),
+                    exercises = listOf(
+                        PlannedExercise(
+                            equipmentId = "incline_dumbbell",
+                            exerciseName = "Incline Dumbbell Press",
+                            prescribedSets = if (extraChest) baseSets + 1 else baseSets,
+                            targetRepRange = "8–12",
+                            targetRir = defaultRir,
+                            restSeconds = 120,
+                            volumeLandmark = if (extraChest) "MRV Focus (+3-4 Sets Priority)" else "MAV (Clavicular Pec)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Barbell Flat Bench", "Sternal Pec", "bench_press", "Heavy press")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = "incline_dumbbell",
+                            exerciseName = "Dumbbell Lateral Raise Strict Form",
+                            prescribedSets = if (extraDelts) baseSets + 2 else baseSets,
+                            targetRepRange = "12–15",
+                            targetRir = defaultRir,
+                            restSeconds = 60,
+                            volumeLandmark = if (extraDelts) "MRV Focus (+3-4 Sets Priority)" else "MAV (Lateral Deltoid)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Cable Lateral Fly", "Side Delts", "cable_fly", "Smooth constant tension")
+                            )
+                        )
+                    )
+                ),
+                WorkoutSessionPlan(
+                    dayName = "Pull 2",
+                    splitTitle = "Mid-Back Thickness & Biceps",
+                    targetMuscles = listOf("Latissimus Dorsi", "Rhomboids", "Biceps"),
+                    exercises = listOf(
+                        PlannedExercise(
+                            equipmentId = rowEquip(),
+                            exerciseName = rowName(),
+                            prescribedSets = if (extraLats) baseSets + 1 else baseSets,
+                            targetRepRange = "8–12",
+                            targetRir = defaultRir,
+                            restSeconds = 120,
+                            volumeLandmark = if (extraLats) "MRV Focus (+3-4 Sets Priority)" else "MAV (Scapular Retraction)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Cable Lat Pulldown", "Vertical Pull", "lat_pulldown", "Lat width")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = pullEquip(),
+                            exerciseName = "Underhand Grip Lat Pulldown / Row",
+                            prescribedSets = if (extraArms) baseSets + 1 else baseSets,
+                            targetRepRange = "10–12",
+                            targetRir = defaultRir,
+                            restSeconds = 90,
+                            volumeLandmark = if (extraArms) "MRV Focus (+3-4 Sets Priority)" else "MAV (Biceps & Lats)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Seated Row", "Mid Back", "seated_row", "Thickness")
+                            )
+                        )
+                    )
+                ),
+                WorkoutSessionPlan(
+                    dayName = "Legs 2",
+                    splitTitle = "Posterior Chain, Glutes & Hamstrings",
+                    targetMuscles = listOf("Glutes", "Hamstrings", "Quadriceps"),
+                    exercises = listOf(
+                        PlannedExercise(
+                            equipmentId = squatEquip(),
+                            exerciseName = if (isBodyweight) "Bulgarian Split Squats" else "Dumbbell Goblet Squat",
+                            prescribedSets = if (extraQuads) baseSets + 1 else baseSets,
+                            targetRepRange = "10–12",
+                            targetRir = defaultRir,
+                            restSeconds = 120,
+                            volumeLandmark = if (extraQuads) "MRV Focus (+3-4 Sets Priority)" else "MAV (Unilateral Leg)",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Barbell Squat", "Quad Anchor", "squat_rack", "Heavy bilateral squat")
+                            )
+                        ),
+                        PlannedExercise(
+                            equipmentId = "treadmill",
+                            exerciseName = "Incline Treadmill Walk",
+                            prescribedSets = 3,
+                            targetRepRange = "15 Min at 8%",
+                            targetRir = "Zone 2",
+                            restSeconds = 60,
+                            volumeLandmark = "Posterior Chain Oxidation",
+                            biomechanicalSwaps = listOf(
+                                BiomechanicalSwap("Ergometer Bike", "Leg Flush", "exercise_bike", "Low impact")
                             )
                         )
                     )

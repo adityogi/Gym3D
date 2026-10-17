@@ -17,6 +17,7 @@ data class UserProfileEntity(
     val workoutDaysPerWeek: Int = 4, // 3, 4, 5, 6
     val prioritizedMuscle1: String = "Upper Chest",
     val prioritizedMuscle2: String = "Side Delts",
+    val equipmentAccess: String = "Commercial Gym", // "Commercial Gym", "Home Dumbbells", "Bodyweight / Calisthenics"
     val targetCalories: Int = 2650,
     val targetProteinG: Int = 175,
     val targetCarbsG: Int = 300,

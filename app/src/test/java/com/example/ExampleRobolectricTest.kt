@@ -214,4 +214,105 @@ class ExampleRobolectricTest {
         assertEquals(1, logs.size)
         assertEquals("Grilled Chicken & Rice", logs.first().foodName)
     }
+
+    @Test
+    fun `verify diagnostic onboarding telemetry calculations`() {
+        val bmi = ScienceEngine.calculateBmi(180f, 80f)
+        assertEquals(24.69f, bmi, 0.1f)
+
+        val bmrMale = ScienceEngine.calculateBmr(isMale = true, age = 25, heightCm = 180f, weightKg = 80f)
+        // 10*80 + 6.25*180 - 5*25 + 5 = 800 + 1125 - 125 + 5 = 1805
+        assertEquals(1805f, bmrMale, 1.0f)
+
+        val bmrFemale = ScienceEngine.calculateBmr(isMale = false, age = 25, heightCm = 165f, weightKg = 60f)
+        // 10*60 + 6.25*165 - 5*25 - 161 = 600 + 1031.25 - 125 - 161 = 1345.25
+        assertEquals(1345.25f, bmrFemale, 1.0f)
+
+        val desc3 = ScienceEngine.getSplitDescription(3)
+        assertTrue(desc3.contains("Full Body"))
+
+        val desc5 = ScienceEngine.getSplitDescription(5)
+        assertTrue(desc5.contains("5-Day"))
+    }
+
+    @Test
+    fun `verify workout generation engine equipment adaptation`() {
+        // Home Dumbbells adaptation
+        val splitDumbbells = ScienceEngine.generateSplit(
+            daysPerWeek = 4,
+            prioritized1 = "Upper Chest",
+            prioritized2 = "Side Delts",
+            experienceLevel = "Intermediate (1-3 yrs)",
+            equipmentAccess = "Home Dumbbells"
+        )
+        assertEquals(4, splitDumbbells.size)
+        val upper1 = splitDumbbells.first()
+        assertTrue(upper1.exercises.any { it.exerciseName.contains("Dumbbell") })
+
+        // 5-day split generation
+        val split5Day = ScienceEngine.generateSplit(5, "Upper Chest", "Side Delts")
+        assertEquals(5, split5Day.size)
+        assertEquals("Push 1", split5Day[0].dayName)
+        assertEquals("Pull 1", split5Day[1].dayName)
+        assertEquals("Legs 1", split5Day[2].dayName)
+        assertEquals("Upper Hypertrophy", split5Day[3].dayName)
+        assertEquals("Lower Hypertrophy", split5Day[4].dayName)
+    }
+
+    @Test
+    fun `verify 3D equipment visualizer view component and 360 interaction`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val visualizerView = com.example.engine3d.EquipmentVisualizerView(context)
+
+        // Verify initial state
+        assertEquals("bench_press", visualizerView.currentModelId)
+        assertEquals(35f, visualizerView.yaw, 0.01f)
+        assertEquals(14f, visualizerView.pitch, 0.01f)
+        assertEquals(1.0f, visualizerView.zoom, 0.01f)
+
+        // 360-degree rotation wrapping test
+        visualizerView.yaw = 370f
+        assertEquals(10f, visualizerView.yaw, 0.01f)
+
+        visualizerView.yaw = -45f
+        assertEquals(315f, visualizerView.yaw, 0.01f)
+
+        // Pitch clamping test
+        visualizerView.pitch = 95f
+        assertEquals(80f, visualizerView.pitch, 0.01f)
+
+        visualizerView.pitch = -100f
+        assertEquals(-80f, visualizerView.pitch, 0.01f)
+
+        // Zoom clamping test
+        visualizerView.zoom = 5.0f
+        assertEquals(3.0f, visualizerView.zoom, 0.01f)
+
+        // Model switching & loading test
+        visualizerView.loadModel("squat_rack", 0.5f)
+        assertEquals("squat_rack", visualizerView.currentModelId)
+        assertEquals(0.5f, visualizerView.currentProgress, 0.01f)
+
+        // Model3DLoader test
+        val squatMeta = com.example.engine3d.Model3DLoader.getModelMeta("squat_rack")
+        assertNotNull(squatMeta)
+        assertEquals("Commercial Power Cage", squatMeta.name)
+
+        // Wavefront OBJ parsing test
+        val testObj = """
+            # Simple 3D Pyramid
+            v 0.0 1.0 0.0
+            v -1.0 -1.0 1.0
+            v 1.0 -1.0 1.0
+            v 1.0 -1.0 -1.0
+            v -1.0 -1.0 -1.0
+            f 1 2 3
+            f 1 3 4
+            f 1 4 5
+            f 1 5 2
+        """.trimIndent()
+        val parsedModel = com.example.engine3d.Model3DLoader.loadObjString(testObj)
+        assertEquals(5, parsedModel.vertices.size)
+        assertEquals(4, parsedModel.faces.size)
+    }
 }

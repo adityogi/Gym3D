@@ -33,6 +33,11 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.engine3d.Gym3DCanvas
 import com.example.engine3d.Render3DMode
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import com.example.model.Equipment
 import com.example.ui.theme.BrightAmber
 import com.example.ui.theme.CyberEmerald
@@ -78,6 +85,15 @@ fun Interactive3DStudio(
     onSetRenderMode: (Render3DMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isAutoSpinning by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isAutoSpinning) {
+        while (isAutoSpinning && isActive) {
+            delay(16L)
+            onRotate(0.4f, 0f)
+        }
+    }
+
     // Determine movement phase
     val phaseName = when {
         animationProgress < 0.35f -> "Concentric Drive (Lifting)"
@@ -110,13 +126,21 @@ fun Interactive3DStudio(
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "360° REAL-TIME 3D VIEW",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = ElectricLime,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
+                Column {
+                    Text(
+                        text = "360° REAL-TIME 3D VIEW",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ElectricLime,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "Swipe to rotate • Pinch to zoom",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextMuted,
+                        fontSize = 10.sp
+                    )
+                }
             }
 
             // Mode Selector Pill
@@ -177,9 +201,10 @@ fun Interactive3DStudio(
                     .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "CAM: ${yaw.toInt()}° YAW / ${pitch.toInt()}° PITCH",
+                    text = "360° YAW: ${yaw.toInt()}° | PITCH: ${pitch.toInt()}°",
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary,
+                    color = ElectricLime,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 10.sp
                 )
                 Text(
@@ -190,17 +215,19 @@ fun Interactive3DStudio(
                 )
             }
 
-            // Top-right Preset Camera Buttons (Side 90, Front, Iso, Top)
+            // Top-right Preset Camera Buttons (Side 90, Front, Iso, Top, Back, Auto-Spin)
             Column(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                PresetCameraBtn(if (isAutoSpinning) "SPINNING" else "360° AUTO") { isAutoSpinning = !isAutoSpinning }
                 PresetCameraBtn("ISO") { onSetCameraAngles(equipment.defaultCameraYaw, equipment.defaultCameraPitch) }
+                PresetCameraBtn("FRONT 0°") { onSetCameraAngles(0f, 12f) }
                 PresetCameraBtn("SIDE 90°") { onSetCameraAngles(90f, 10f) }
-                PresetCameraBtn("FRONT") { onSetCameraAngles(0f, 12f) }
-                PresetCameraBtn("TOP") { onSetCameraAngles(0f, 75f) }
+                PresetCameraBtn("BACK 180°") { onSetCameraAngles(180f, 12f) }
+                PresetCameraBtn("TOP 75°") { onSetCameraAngles(0f, 75f) }
                 PresetCameraBtn("RESET") { onResetCamera() }
             }
 

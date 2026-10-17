@@ -12,7 +12,7 @@ import androidx.room.RoomDatabase
         NutritionLogEntity::class,
         BodyMetricEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class GymDatabase : RoomDatabase() {
