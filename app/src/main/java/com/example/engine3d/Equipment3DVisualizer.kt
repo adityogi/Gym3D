@@ -28,11 +28,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Cached
+import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material3.CircularProgressIndicator
+import com.example.data.GymEquipmentRepository
+import com.example.ui.components.MuscleActivationOverlay
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -108,6 +111,12 @@ fun Equipment3DVisualizer(
     var isTurntableActive by remember { mutableStateOf(false) }
     var useAndroidViewBackend by remember { mutableStateOf(false) }
     var isModelLoading by remember { mutableStateOf(false) }
+    var isMuscleOverlayExpanded by remember { mutableStateOf(false) }
+
+    // Resolve corresponding equipment for muscle activation metadata
+    val currentEquipment = remember(currentModelId) {
+        GymEquipmentRepository.allEquipment.firstOrNull { it.id == currentModelId }
+    }
 
     // Rotational Momentum state
     var velocityYaw by remember { mutableFloatStateOf(0f) }
@@ -475,13 +484,41 @@ fun Equipment3DVisualizer(
                 )
             }
 
-            // Top-Right Controls: Turntable 360° Auto-spin + Backend Toggle
+            // Top-Right Controls: Muscle Overlay + Turntable 360° Auto-spin + Reset
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                // Muscle Activation Overlay Toggle
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isMuscleOverlayExpanded) ElectricLime else DarkSurface.copy(alpha = 0.85f))
+                        .border(1.dp, if (isMuscleOverlayExpanded) ElectricLime else DarkBorder, RoundedCornerShape(8.dp))
+                        .clickable { isMuscleOverlayExpanded = !isMuscleOverlayExpanded }
+                        .padding(horizontal = 8.dp, vertical = 5.dp)
+                        .testTag("muscle_overlay_toggle_btn")
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.FlashOn,
+                            contentDescription = "Toggle Muscle Overlay",
+                            tint = if (isMuscleOverlayExpanded) Color(0xFF0F1115) else ElectricLime,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (isMuscleOverlayExpanded) "HIDE OVERLAY" else "MUSCLES",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isMuscleOverlayExpanded) Color(0xFF0F1115) else TextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+
                 // Turntable Auto-spin button
                 Box(
                     modifier = Modifier
@@ -536,21 +573,48 @@ fun Equipment3DVisualizer(
             }
 
             // Bottom Interaction Prompt Overlay
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 10.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(DarkSurface.copy(alpha = 0.85f))
-                    .border(1.dp, DarkBorder.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = "Drag to rotate 360° • Pinch to zoom • Double-tap to reset",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary,
-                    fontSize = 10.sp
-                )
+            if (!isMuscleOverlayExpanded) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 10.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(DarkSurface.copy(alpha = 0.85f))
+                        .border(1.dp, DarkBorder.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Drag to rotate 360° • Pinch to zoom • Double-tap to reset",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+
+            // Primary & Secondary Muscle Activation Visual Overlay
+            if (currentEquipment != null) {
+                if (isMuscleOverlayExpanded) {
+                    MuscleActivationOverlay(
+                        activations = currentEquipment.muscleActivations,
+                        animationProgress = progress,
+                        initialExpanded = true,
+                        onVisibilityChanged = { isMuscleOverlayExpanded = it },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(6.dp)
+                    )
+                } else {
+                    MuscleActivationOverlay(
+                        activations = currentEquipment.muscleActivations,
+                        animationProgress = progress,
+                        initialExpanded = false,
+                        onVisibilityChanged = { isMuscleOverlayExpanded = it },
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(start = 10.dp, bottom = 36.dp)
+                    )
+                }
             }
         }
 

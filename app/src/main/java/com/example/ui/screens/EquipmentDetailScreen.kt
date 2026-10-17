@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -293,6 +294,43 @@ private fun DetailOverviewSection(equipment: Equipment) {
                 color = ElectricLime,
                 modifier = Modifier.weight(1f)
             )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Primary and Secondary Muscle Recruitment Summary
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(DarkSurfaceVariant)
+                .padding(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(ElectricLime))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "PRIMARY MOVER: ${equipment.primaryMuscle.displayName}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ElectricLime,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                )
+            }
+            if (equipment.secondaryMuscles.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(CyberEmerald))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "SECONDARY SYNERGISTS: ${equipment.secondaryMuscles.joinToString(", ") { it.displayName }}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = CyberEmerald,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 10.sp
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))

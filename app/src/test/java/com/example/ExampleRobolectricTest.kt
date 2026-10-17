@@ -315,4 +315,59 @@ class ExampleRobolectricTest {
         assertEquals(5, parsedModel.vertices.size)
         assertEquals(4, parsedModel.faces.size)
     }
+
+    @Test
+    fun `verify primary and secondary muscle activation overlay for 3D equipment`() {
+        val allEquipment = com.example.data.GymEquipmentRepository.allEquipment
+        assertTrue(allEquipment.isNotEmpty())
+
+        for (equipment in allEquipment) {
+            // Verify primary muscle is defined and non-null
+            assertNotNull(equipment.primaryMuscle)
+            assertTrue(equipment.muscleActivations.isNotEmpty())
+
+            // Verify primary agonist activations exist
+            val primaryActivations = equipment.muscleActivations.filter { it.role == com.example.model.MuscleRole.PRIMARY_AGONIST }
+            assertTrue(
+                "Equipment ${equipment.id} should have at least one PRIMARY_AGONIST activation",
+                primaryActivations.isNotEmpty()
+            )
+            assertTrue(primaryActivations.first().intensityPercent >= 80)
+
+            // Verify secondary activations if secondary muscles defined
+            if (equipment.secondaryMuscles.isNotEmpty()) {
+                val secondaryActivations = equipment.muscleActivations.filter {
+                    it.role == com.example.model.MuscleRole.SYNERGIST || it.role == com.example.model.MuscleRole.STABILIZER
+                }
+                assertTrue(
+                    "Equipment ${equipment.id} should have secondary synergist/stabilizer activations",
+                    secondaryActivations.isNotEmpty()
+                )
+            }
+        }
+
+        // Test Bench Press specific muscle activations
+        val bench = allEquipment.first { it.id == "bench_press" }
+        assertEquals(com.example.model.MuscleGroup.CHEST, bench.primaryMuscle)
+        val benchPrimary = bench.muscleActivations.filter { it.role == com.example.model.MuscleRole.PRIMARY_AGONIST }
+        assertEquals(1, benchPrimary.size)
+        assertEquals(com.example.model.MuscleGroup.CHEST, benchPrimary.first().muscle)
+        assertEquals(95, benchPrimary.first().intensityPercent)
+
+        val benchSecondary = bench.muscleActivations.filter {
+            it.role == com.example.model.MuscleRole.SYNERGIST || it.role == com.example.model.MuscleRole.STABILIZER
+        }
+        assertEquals(3, benchSecondary.size)
+        assertTrue(benchSecondary.any { it.muscle == com.example.model.MuscleGroup.ARMS })
+        assertTrue(benchSecondary.any { it.muscle == com.example.model.MuscleGroup.SHOULDERS })
+        assertTrue(benchSecondary.any { it.muscle == com.example.model.MuscleGroup.BACK })
+
+        // Test Filter Mode partitioning logic
+        val allCount = bench.muscleActivations.size
+        val primaryOnlyCount = bench.muscleActivations.count { it.role == com.example.model.MuscleRole.PRIMARY_AGONIST }
+        val secondaryOnlyCount = bench.muscleActivations.count {
+            it.role == com.example.model.MuscleRole.SYNERGIST || it.role == com.example.model.MuscleRole.STABILIZER
+        }
+        assertEquals(allCount, primaryOnlyCount + secondaryOnlyCount)
+    }
 }

@@ -215,13 +215,18 @@ fun Interactive3DStudio(
                 )
             }
 
-            // Top-right Preset Camera Buttons (Side 90, Front, Iso, Top, Back, Auto-Spin)
+            var isMuscleOverlayExpanded by remember { mutableStateOf(false) }
+
+            // Top-right Preset Camera Buttons (Side 90, Front, Iso, Top, Back, Auto-Spin, Muscle Overlay)
             Column(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                PresetCameraBtn(if (isMuscleOverlayExpanded) "HIDE OVERLAY" else "MUSCLES OVERLAY") {
+                    isMuscleOverlayExpanded = !isMuscleOverlayExpanded
+                }
                 PresetCameraBtn(if (isAutoSpinning) "SPINNING" else "360° AUTO") { isAutoSpinning = !isAutoSpinning }
                 PresetCameraBtn("ISO") { onSetCameraAngles(equipment.defaultCameraYaw, equipment.defaultCameraPitch) }
                 PresetCameraBtn("FRONT 0°") { onSetCameraAngles(0f, 12f) }
@@ -232,30 +237,55 @@ fun Interactive3DStudio(
             }
 
             // Bottom Floating Phase Indicator
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 12.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(DarkSurface.copy(alpha = 0.9f))
-                    .border(1.dp, ElectricLime.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(ElectricLime)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = phaseName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
+            if (!isMuscleOverlayExpanded) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(DarkSurface.copy(alpha = 0.9f))
+                        .border(1.dp, ElectricLime.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(ElectricLime)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = phaseName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
+            }
+
+            // Primary & Secondary Muscle Activation Visual Overlay
+            if (isMuscleOverlayExpanded) {
+                MuscleActivationOverlay(
+                    activations = equipment.muscleActivations,
+                    animationProgress = animationProgress,
+                    initialExpanded = true,
+                    onVisibilityChanged = { isMuscleOverlayExpanded = it },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(6.dp)
+                )
+            } else {
+                MuscleActivationOverlay(
+                    activations = equipment.muscleActivations,
+                    animationProgress = animationProgress,
+                    initialExpanded = false,
+                    onVisibilityChanged = { isMuscleOverlayExpanded = it },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 10.dp, bottom = 44.dp)
+                )
             }
         }
 
