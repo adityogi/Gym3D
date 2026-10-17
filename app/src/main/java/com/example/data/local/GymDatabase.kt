@@ -6,13 +6,21 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [WorkoutSetEntity::class],
-    version = 1,
+    entities = [
+        WorkoutSetEntity::class,
+        UserProfileEntity::class,
+        NutritionLogEntity::class,
+        BodyMetricEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
 abstract class GymDatabase : RoomDatabase() {
 
     abstract fun workoutSetDao(): WorkoutSetDao
+    abstract fun userProfileDao(): UserProfileDao
+    abstract fun nutritionLogDao(): NutritionLogDao
+    abstract fun bodyMetricDao(): BodyMetricDao
 
     companion object {
         @Volatile
@@ -25,7 +33,7 @@ abstract class GymDatabase : RoomDatabase() {
                     GymDatabase::class.java,
                     "gym_3d_database"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance

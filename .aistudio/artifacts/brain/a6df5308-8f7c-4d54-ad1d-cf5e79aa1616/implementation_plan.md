@@ -1,28 +1,28 @@
-# Workout Logging with Room Persistence in Gym3D
+# Science-Based Fitness Coach & 3D Biomechanics (BWS+ Architecture)
 
-Add an on-device Room database persistence layer to Gym3D that allows users to record, review, and auto-fill completed sets, repetitions, resistance weights, or cardio metrics directly within each equipment's 3D detail screen, complete with an interactive rest countdown timer.
+Transform Gym3D into an evidence-based personal trainer and adaptive nutrition engine inspired by Built With Science+ (BWS+), combining 3D equipment visualization with intelligent periodization, automated progressive overload, adaptive macro adjustments, and an AI science coach.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> Based on your responses, the logging architecture is configured as follows:
+> Based on your confirmed choices during the clarification interview, the architecture is locked as follows:
 
-- **Location (Confirmed)**: Dedicated "Workout Log" tab positioned directly inside each equipment's 3D detail screen, allowing users to inspect the 3D model, review setup pins, and log sets without leaving the equipment view.
-- **Adaptive Tracking Fields (Confirmed)**:
-  - **Strength & Cable Machines**: `Set Number`, `Weight (kg / lbs)`, `Reps Completed`, `RPE / Notes`.
-  - **Cardio Machines**: `Interval / Round`, `Duration (Minutes:Seconds)`, `Distance (km / mi)`, `Incline / Resistance Level / Pace`, and `Heart Rate / Calories`.
-- **Companion Tools (Confirmed)**:
-  - **Previous Set Auto-Fill**: Automatically fills in the weight and reps from the user's last recorded set for that equipment to speed up logging.
-  - **Interactive Rest Timer**: Built-in 60s / 90s / 120s / custom rest countdown with progress ring and vibration / visual notification upon completion.
-  - **Session History & PR Badges**: Displays past workout dates, completed sets history, total volume (weight × reps), and Personal Record (PR) badges.
+- **Navigation Structure (Confirmed)**: Full 5-tab Material 3 bottom navigation:
+  1. `Today`: Daily macro rings, active streak, daily science knowledge booster, and today's scheduled split workout.
+  2. `Workouts`: Active periodized split routine (PPL, Upper/Lower, Full Body), 3D equipment visualizer, progressive overload cues, exercise swaps, and set logger.
+  3. `Nutrition`: Dynamic Mifflin-St Jeor TDEE tracker, weekly calorie/macro flux check-in, and multi-meal food logger.
+  4. `Analytics`: Body recomposition detector, 1RM strength curves, volume landmarks (MEV/MAV/MRV), and body metrics.
+  5. `Coach`: Hybrid Science Coach equipped with pre-compiled peer-reviewed literature knowledge cards (Schoenfeld, Helms, Aragon) and live Gemini AI chat (`gemini-3.5-flash`).
+- **Onboarding & Split Allocation (Confirmed)**: Interactive 5-step diagnostic quiz (Biological Sex, Age, Height, Weight, Estimated Body Fat %, Training Experience, Location/Gear, Lagging Muscle Prioritizer) that generates a custom periodized split with an option to retake or adjust anytime in Settings.
+- **Coach Assistant (Confirmed)**: Hybrid architecture delivering instant answers from an offline sports science knowledge base plus live generative consultation using the Gemini API.
 
 ---
 
 ## 1. Overview & Core Concept
 
-- **What It Does**: Bridges 3D equipment visualization with real-world gym performance tracking. After users check the 3D form demonstration and calibration pins for a machine (e.g., *Cable Lat Pulldown* or *Squat Rack*), they switch to the "Workout Log" tab to log their work sets, start rest timers, and see their historical volume progression over time.
-- **Target Audience**: Lifters and gym members who want an integrated tool where they can look up proper equipment biomechanics and immediately log their working weights and reps in one seamless offline app.
-- **Key Value**: Replaces separate notebook/generic tracker apps with equipment-contextual tracking backed by local Room database storage that works 100% offline.
+- **What It Does**: Unifies evidence-based training, nutrition, and biomechanics into a single pocket coach. Rather than following static spreadsheets, users receive dynamically adjusted workouts and nutritional recommendations calibrated to their weekly progress.
+- **Target Audience**: Natural lifters and fitness enthusiasts who want rigorous scientific principles (progressive overload, volume landmarks, energy balance) executed seamlessly with 3D biomechanics form verification.
+- **Key Value**: Replaces guesswork with algorithms: automated weight/rep progression rules, precise exercise swaps matching muscular divisions, and adaptive weekly caloric adjustments that prevent metabolic plateaus.
 
 ---
 
@@ -30,113 +30,100 @@ Add an on-device Room database persistence layer to Gym3D that allows users to r
 
 ### Key User Flows
 
-1. **Viewing & Logging Sets in Detail Screen**:
-   - The user opens an equipment screen (e.g., *Barbell Flat Bench Press*).
-   - In the tab bar, a new **"Log (X Sets)"** tab appears next to *3D Guide*, *Setup & Pins*, *Muscles*, and *Form Mistakes*.
-   - Tapping **"Log"** shows:
-     - Today's active session set table (Set 1, Set 2, Set 3...).
-     - Pre-populated suggested weight and reps based on the user's previous session.
-     - Single-tap **"+ Add Set"** with quick +/- stepper buttons for weight (+2.5kg / +5kg) and reps (+1).
-     - Checkmark button to mark the set as "Completed", which automatically triggers the rest timer.
-2. **Rest Timer HUD**:
-   - Marking a set completed launches a non-intrusive floating or embedded rest timer (e.g., 90s countdown with pause, +30s, and skip buttons).
-   - A circular animated progress indicator displays remaining rest time with haptic visual cues when finished.
-3. **Cardio Machine Adaptive Form**:
-   - When viewing cardio gear (e.g., *Commercial Treadmill*, *Stationary Bike*, *Rowing Machine*), the logging form seamlessly shifts to Duration (min:sec), Distance (km), Speed/Incline, and Calories.
-4. **Historical Log & Personal Records (PR)**:
-   - Below the active logging card, an expandable "Previous Sessions History" card displays past logged dates, total tonnage volume, and personal best sets.
-   - Users can swipe or tap to delete erroneous entries.
-
-### Visual Identity & Theme Alignment
-
-- Preserves Gym3D's **Titanium Slate & Electric Lime** aesthetic:
-  - `Set Number Badge`: Cyber Emerald pill indicator.
-  - `Completed Set Row`: Subtle dark surface highlight with glowing green checkmark.
-  - `Rest Timer`: Neon Cyan circular countdown gauge with high-contrast digital timer.
-  - `PR Badge`: Safety Amber trophy tag.
+1. **Diagnostic Onboarding & Split Assignment**:
+   - On first launch, the user completes the 5-step diagnostic onboarding:
+     - Biometrics: Sex, Age, Height, Weight.
+     - Body Fat visual selector (8% to 35%+).
+     - Goal: Hypertrophy (Lean Bulk), Fat Loss (Cut), or Body Recomposition.
+     - Schedule: 3 Days (Full Body A/B/C), 4 Days (Upper/Lower), 5 Days (Push/Pull/Legs/Upper/Lower), 6 Days (PPL x 2).
+     - Muscle Group Prioritizer: Choose up to 2 lagging muscle groups (e.g., Upper Chest, Side Delts, Lats, Glutes) to allocate 3-4 extra weekly sets while moderating opposing volume.
+2. **Today Dashboard**:
+   - Displays daily caloric and macronutrient progress rings (Protein, Carbs, Fat, Total Calories).
+   - Card for "Today's Scheduled Session" with estimated completion time and target muscle tags.
+   - **Daily 2-Minute Science Booster**: Micro-learning cards with a 1-question comprehension check to build exercise literacy.
+3. **Autonomous Progressive Overload & Workout Logger**:
+   - Each exercise in the workout features target rep boundaries (e.g., 8–12 reps at RIR 1–2).
+   - **Double Progression Trigger**: When a user hits the top of the rep range across all prescribed sets, an automated prompt highlights: *"Target Achieved! Increase load by +2.5 kg / 5 lbs next session."*
+   - **Plateau / Deload Alert**: If load or reps stall for 3 consecutive weeks, a 1-week deload protocol (50% volume, -10% load) is recommended.
+   - **Biomechanical Exercise Swap**: Tap "Swap" to choose from 3 biomechanically verified alternatives sharing the exact resistance profile and muscular division (e.g., Barbell Incline Press $\leftrightarrow$ Incline Dumbbell Press $\leftrightarrow$ Low-to-High Cable Fly).
+   - Directly linked to Gym3D's interactive 3D model studio and form check cards.
+4. **Adaptive Nutrition Engine & Weekly Flux**:
+   - Computes baseline TDEE using Mifflin-St Jeor:
+     $$\text{BMR} = 10 \times \text{weight} + 6.25 \times \text{height} - 5 \times \text{age} + s$$
+   - Protein: $2.2\text{ g/kg}$ ($1.0\text{ g/lb}$); Fat: $25\%$ of calories; Carbs: remainder.
+   - Weekly Check-in Loop: Compares 7-day rolling scale weight against targets (e.g., $-0.5\%/\text{week}$ for cutting). If stalled, auto-decrements calories by $125\text{ kcal}$; if losing too rapidly ($>1.2\%$), auto-increments by $100\text{ kcal}$ to protect muscle tissue.
+5. **Body Recomposition Detector & Analytics**:
+   - Monitors 3 streams simultaneously: 7-day rolling weight average, waist circumference, and estimated 1RM compound strength (Brzycki formula).
+   - Fires a **"Body Recomposition Milestone Unlocked"** badge when scale weight is steady within $\pm 1\text{ lb}$ while waist shrinks $\ge 0.5\text{ in}$ and compound 1RMs increase $\ge 5\%$ over 4 weeks.
+6. **Science AI Coach ("Jeremy AI")**:
+   - Quick prompt chips: *"How do I break a bench plateau?"*, *"Optimal warm-up protocol"*, *"Should I eat before morning lifting?"*, *"Creatine timing and dosing"*.
+   - Generates science-backed responses referencing peer-reviewed literature (Schoenfeld, Helms, Aragon, Phillips) using `gemini-3.5-flash` with offline fallback.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-### Decision 1: Room SQLite Database with Android KSP
-- **Chosen Approach**: Room Database (`GymDatabase`) with `WorkoutSetEntity`, `WorkoutSetDao`, and reactive Kotlin `Flow`.
-- **Why**:
-  - Guaranteed offline reliability in gym basements where cell reception is unavailable.
-  - Room and KSP dependencies are already integrated in `build.gradle.kts`.
-  - Zero network latency, instant CRUD performance, and automatic reactive UI updates via `collectAsStateWithLifecycle`.
+### Decision 1: Room Database Schema Expansion vs. Cloud
+- **Chosen Approach**: Store user onboarding profiles, periodized workout splits, nutrition logs, daily check-ins, and body recomp measurements in the local Room SQLite database (`GymDatabase`).
+- **Why**: Keeps the application completely functional offline in gym environments, ensures lightning-fast queries, and protects private body metric data.
 
-### Decision 2: In-Context Equipment Logging vs. Separate Screen
-- **Chosen Approach**: Dedicated tab embedded directly within each equipment's detail view.
-- **Why**: Keeps the user focused on the machine they are currently standing in front of. They can toggle between inspecting the 3D model/pin calibration and logging their set with a single swipe or tab click.
+### Decision 2: Hybrid Offline Science Knowledge Base + Gemini API
+- **Chosen Approach**: Ship an offline evidence-based sports science engine with 20+ verified research cards, supplemented by live Gemini API (`gemini-3.5-flash`) calls when network/API keys are available.
+- **Why**: Ensures users never encounter blank screens or errors if offline or without an active API key, while delivering full conversational AI depth when online.
 
 ---
 
-## 4. Technical Architecture & Data Strategy
+## 4. Technical Architecture & Component Hierarchy
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│                   EquipmentDetailScreen                │
+│                      UI Layer                          │
 │                                                        │
-│  [3D Guide]  [Setup & Pins]  [Muscles]  [Workout Log]  │
-│                                               │        │
-│                                               ▼        │
-│                          ┌──────────────────────────┐  │
-│                          │  EquipmentWorkoutLogTab  │  │
-│                          │  • Set Logging Table     │  │
-│                          │  • Rest Countdown Timer  │  │
-│                          │  • History & PR Badges   │  │
-│                          └────────────┬─────────────┘  │
-└───────────────────────────────────────┼────────────────┘
-                                        ▼
+│  ┌──────────────────────────────────────────────────┐  │
+│  │              MainNavigationHost                  │  │
+│  │  ┌───────────┬───────────┬───────────┬────────┐  │  │
+│  │  │  Today    │  Workout  │ Nutrition │Analytics│  │  │
+│  │  │ Dashboard │ & 3D Gym  │ & TDEE    │& Recomp│  │  │
+│  │  └───────────┴───────────┴───────────┴────────┘  │  │
+│  │  ┌────────────────────────────────────────────┐  │  │
+│  │  │               Coach AI Screen              │  │  │
+│  │  └────────────────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────────────┐  │  │
+│  │  │            Onboarding Quiz Dialog          │  │  │
+│  │  └────────────────────────────────────────────┘  │  │
+│  └─────────────────────────┬────────────────────────┘  │
+└────────────────────────────┼───────────────────────────┘
+                             ▼
 ┌────────────────────────────────────────────────────────┐
-│                 GymEquipmentViewModel                  │
-│  • Exposes StateFlow<List<WorkoutSetEntity>> by equip  │
-│  • Rest timer clock & background coroutine countdown   │
-│  • Auto-fills next set from previous values            │
-│  • addSet(), updateSet(), deleteSet(), completeSet()   │
-└───────────────────────────────────────┬────────────────┘
-                                        ▼
+│                   ViewModel Layer                      │
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │              ScienceCoachViewModel               │  │
+│  │  • User Profile & Diagnostic Assessment State    │  │
+│  │  • Generated Periodized Split & Workout Program  │  │
+│  │  • Progressive Overload & Exercise Swap Engine   │  │
+│  │  • Adaptive Nutrition BMR/TDEE & Weekly Check-ins│  │
+│  │  • Body Recomp Calculations (Weight + Waist + 1RM)│ │
+│  │  • Gemini AI Coach Service & Offline Q&A Engine  │  │
+│  └─────────────────────────┬────────────────────────┘  │
+└────────────────────────────┼───────────────────────────┘
+                             ▼
 ┌────────────────────────────────────────────────────────┐
-│                  WorkoutRepository                     │
-│  • Abstract interface between Room DAO and ViewModel   │
-└───────────────────────────────────────┬────────────────┘
-                                        ▼
-┌────────────────────────────────────────────────────────┐
-│                   GymDatabase (Room)                   │
+│                     Data Layer                         │
 │                                                        │
 │  ┌───────────────────────┐  ┌───────────────────────┐  │
-│  │   WorkoutSetEntity    │  │     WorkoutSetDao     │  │
-│  │  • id (PrimaryKey)    │  │  • getSetsByEquip()   │  │
-│  │  • equipmentId        │  │  • insertSet()        │  │
-│  │  • setNumber          │  │  • updateSet()        │  │
-│  │  • weightKg / reps    │  │  • deleteSet()        │  │
-│  │  • duration / distance│  │  • getPreviousSet()   │  │
-│  │  • isCompleted        │  │  • getRecentHistory() │  │
-│  │  • timestamp          │  └───────────────────────┘  │
-│  └───────────────────────┘                             │
+│  │  GymDatabase (Room)   │  │  SportsScienceEngine   │  │
+│  │  • UserProfileEntity  │  │  • Exercise Swap Maps  │  │
+│  │  • WorkoutSetEntity   │  │  • Volume Landmarks   │  │
+│  │  • NutritionLogEntity │  │  • Research Articles   │  │
+│  │  • BodyMetricEntity   │  │  • Double Progression  │  │
+│  └───────────────────────┘  └───────────────────────┘  │
 └────────────────────────────────────────────────────────┘
 ```
 
-### Room Schema Design
+### Core Entities & Data Structures
 
-```kotlin
-@Entity(
-    tableName = "workout_sets",
-    indices = [Index(value = ["equipmentId", "timestamp"])]
-)
-data class WorkoutSetEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val equipmentId: String,
-    val setNumber: Int,
-    val weightKg: Float = 0f,
-    val reps: Int = 0,
-    val durationSeconds: Int = 0,
-    val distanceKm: Float = 0f,
-    val inclineOrResistance: Float = 0f,
-    val rpe: Float = 8f,
-    val notes: String = "",
-    val isCompleted: Boolean = false,
-    val timestamp: Long = System.currentTimeMillis()
-)
-```
+- `UserProfileEntity`: Age, Sex, Height, Weight, Body Fat %, Goal (Bulk/Cut/Recomp), Experience, Split Preference (3-6 days), Prioritized Muscles, Weekly Target Calories, Protein, Carbs, Fats.
+- `NutritionLogEntity`: Date, Meal Name, Calories, Protein, Carbs, Fats.
+- `BodyMetricEntity`: Timestamp, Weight, Waist Circumference, Compound 1RM.
+- `PeriodizedSplit`: Workouts with designated exercises, target rep brackets (e.g. 8–12), volume landmarks (MEV/MAV/MRV), and verified biomechanical alternatives.

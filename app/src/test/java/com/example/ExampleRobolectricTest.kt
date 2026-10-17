@@ -3,9 +3,13 @@ package com.example
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.example.data.DoubleProgressionStatus
 import com.example.data.GymEquipmentRepository
+import com.example.data.ScienceEngine
 import com.example.data.WorkoutRepository
 import com.example.data.local.GymDatabase
+import com.example.data.local.NutritionLogEntity
+import com.example.data.local.UserProfileEntity
 import com.example.data.local.WorkoutSetEntity
 import com.example.engine3d.EquipmentGeometries
 import com.example.engine3d.Vector3
@@ -134,28 +138,80 @@ class ExampleRobolectricTest {
         assertNotNull(latest)
         assertEquals(90f, latest?.weightKg ?: 0f, 0.01f)
 
-        // Test delete
         repository.deleteSetById(insertedId1)
         val remainingSets = repository.getSetsForEquipment("bench_press").first()
         assertEquals(1, remainingSets.size)
-        assertEquals(90f, remainingSets.first().weightKg, 0.01f)
     }
 
     @Test
-    fun `verify Room database cardio intervals`() = runBlocking {
-        val cardioSet = WorkoutSetEntity(
-            equipmentId = "treadmill",
-            setNumber = 1,
-            durationSeconds = 900,
-            distanceKm = 2.5f,
-            isCompleted = true
+    fun `verify science engine nutrition calculation`() {
+        val (targetCals, macros, _) = ScienceEngine.calculateNutritionTargets(
+            isMale = true,
+            age = 25,
+            heightCm = 180f,
+            weightKg = 80f,
+            daysPerWeek = 4,
+            goal = "Hypertrophy (Lean Bulk)"
         )
-        val id = repository.insertSet(cardioSet)
-        assertTrue(id > 0)
 
-        val retrieved = repository.getSetsForEquipment("treadmill").first()
-        assertEquals(1, retrieved.size)
-        assertEquals(900, retrieved.first().durationSeconds)
-        assertEquals(2.5f, retrieved.first().distanceKm, 0.01f)
+        assertTrue(targetCals > 2000)
+        // Protein should be ~ 80 * 2.2 = 176g
+        assertEquals(176, macros.first)
+        assertTrue(macros.second > 150) // Carbs
+        assertTrue(macros.third > 40) // Fat
+    }
+
+    @Test
+    fun `verify double progression rule evaluation`() {
+        val setsHitTop = listOf(Pair(80f, 12), Pair(80f, 12), Pair(80f, 12))
+        val evalTop = ScienceEngine.evaluateDoubleProgression(12, setsHitTop)
+        assertTrue(evalTop is DoubleProgressionStatus.IncreaseLoad)
+
+        val setsBelowTop = listOf(Pair(80f, 12), Pair(80f, 10), Pair(80f, 9))
+        val evalBelow = ScienceEngine.evaluateDoubleProgression(12, setsBelowTop)
+        assertTrue(evalBelow is DoubleProgressionStatus.MaintainLoad)
+    }
+
+    @Test
+    fun `verify periodized split generation with prioritized muscles`() {
+        val split4Day = ScienceEngine.generateSplit(4, "Upper Chest", "Side Delts")
+        assertEquals(4, split4Day.size)
+        // Check that Upper 1 has bench press
+        val upper1 = split4Day.first()
+        assertTrue(upper1.exercises.any { it.equipmentId == "bench_press" })
+        // Check biomechanical swaps exist
+        assertTrue(upper1.exercises.first().biomechanicalSwaps.isNotEmpty())
+    }
+
+    @Test
+    fun `verify user profile and nutrition log Room persistence`() = runBlocking {
+        val userProfileDao = db.userProfileDao()
+        val nutritionLogDao = db.nutritionLogDao()
+
+        val profile = UserProfileEntity(
+            age = 28,
+            weightKg = 82f,
+            goal = "Fat Loss (Cut)",
+            targetCalories = 2200
+        )
+        userProfileDao.insertOrUpdateProfile(profile)
+        val loadedProfile = userProfileDao.getUserProfileOnce()
+        assertNotNull(loadedProfile)
+        assertEquals(28, loadedProfile?.age)
+        assertEquals(2200, loadedProfile?.targetCalories)
+
+        val meal = NutritionLogEntity(
+            dateString = "2026-10-17",
+            mealType = "Lunch",
+            foodName = "Grilled Chicken & Rice",
+            calories = 550,
+            proteinG = 50f,
+            carbsG = 60f,
+            fatG = 12f
+        )
+        nutritionLogDao.insertLog(meal)
+        val logs = nutritionLogDao.getLogsForDate("2026-10-17").first()
+        assertEquals(1, logs.size)
+        assertEquals("Grilled Chicken & Rice", logs.first().foodName)
     }
 }

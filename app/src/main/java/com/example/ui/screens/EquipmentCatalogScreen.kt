@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CheckCircle
@@ -73,6 +74,7 @@ import com.example.ui.theme.TextSecondary
 fun EquipmentCatalogScreen(
     viewModel: GymEquipmentViewModel,
     onSelectEquipment: (String) -> Unit,
+    onNavigateBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -106,36 +108,51 @@ fun EquipmentCatalogScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(ElectricLime),
-                            contentAlignment = Alignment.Center
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onNavigateBack != null) {
+                        IconButton(
+                            onClick = onNavigateBack,
+                            modifier = Modifier.testTag("catalog_back_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Default.FitnessCenter,
-                                contentDescription = "Gym3D Logo",
-                                tint = Color(0xFF0F1115),
-                                modifier = Modifier.size(20.dp)
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = TextPrimary
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(ElectricLime),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FitnessCenter,
+                                    contentDescription = "Gym3D Logo",
+                                    tint = Color(0xFF0F1115),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "GYM3D",
+                                style = MaterialTheme.typography.displayMedium,
+                                color = TextPrimary,
+                                letterSpacing = 2.sp
+                            )
+                        }
                         Text(
-                            text = "GYM3D",
-                            style = MaterialTheme.typography.displayMedium,
-                            color = TextPrimary,
-                            letterSpacing = 2.sp
+                            text = "Interactive 3D Equipment Studio & Biomechanics",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary,
+                            fontSize = 12.sp
                         )
                     }
-                    Text(
-                        text = "Interactive 3D Equipment Studio & Biomechanics",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
-                        fontSize = 12.sp
-                    )
                 }
 
                 // Equipment Count Badge

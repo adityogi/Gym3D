@@ -1,6 +1,6 @@
 {
-  "summary": "Implementation plan for adding Room database-backed workout set logging, adaptive strength and cardio tracking, rest timer, and previous set auto-fill directly into Gym3D equipment detail views.",
-  "updatedAt": "2026-10-17T12:56:26.826894041Z",
+  "summary": "Comprehensive architectural plan for integrating Built With Science+ inspired features into Gym3D: 5-tab bottom navigation (Today, Workouts/3D, Nutrition, Analytics, Coach), interactive 5-step diagnostic onboarding with periodized split generation (PPL, Upper/Lower, Full Body), autonomous double-progression overload engine, biomechanical exercise swap engine, adaptive Mifflin-St Jeor nutrition & weekly macro flux engine, body recomposition detector, and a hybrid science assistant coach.",
+  "updatedAt": "2026-10-17T16:47:26.075714195Z",
   "requestFeedback": true,
   "userFacing": true
 }
