@@ -1,0 +1,6 @@
+{
+  "name": "Gym3D",
+  "description": "Interactive 3D gym equipment visualizer with real-time 360-degree rotation, exercise form animation, adjustment guides, and muscle maps.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

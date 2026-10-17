@@ -1,0 +1,6 @@
+{
+  "summary": "Implementation plan for adding Room database-backed workout set logging, adaptive strength and cardio tracking, rest timer, and previous set auto-fill directly into Gym3D equipment detail views.",
+  "updatedAt": "2026-10-17T12:56:26.826894041Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

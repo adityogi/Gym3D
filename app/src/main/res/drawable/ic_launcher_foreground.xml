@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 3D Barbell / Equipment Badge centered within 66dp safe zone (21 to 87) -->
+    <!-- Central Bar -->
+    <path
+        android:fillColor="#E2E8F0"
+        android:pathData="M34,51 h40 v6 h-40 z" />
+    <path
+        android:fillColor="#CCFF00"
+        android:pathData="M48,51 h12 v6 h-12 z" />
+        
+    <!-- Left Inner Collar & Plate -->
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M38,47 h3 v14 h-3 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M33,39 h4 v30 h-4 z" />
+    <path
+        android:fillColor="#CCFF00"
+        android:pathData="M27,33 h5 v42 h-5 z" />
+    <path
+        android:fillColor="#64748B"
+        android:pathData="M23,37 h3 v34 h-3 z" />
+
+    <!-- Right Inner Collar & Plate -->
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M67,47 h3 v14 h-3 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M71,39 h4 v30 h-4 z" />
+    <path
+        android:fillColor="#CCFF00"
+        android:pathData="M76,33 h5 v42 h-5 z" />
+    <path
+        android:fillColor="#64748B"
+        android:pathData="M82,37 h3 v34 h-3 z" />
+
+    <!-- Isometric 3D Perspective Wireframe Cube Accent -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#CCFF00"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,27 L70,36 L70,55 L54,64 L38,55 L38,36 Z M54,27 L54,46 M70,36 L54,46 M38,36 L54,46" />
+</vector>
